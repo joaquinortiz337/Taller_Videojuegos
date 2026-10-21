@@ -1,0 +1,9 @@
+Carpeta para la música del juego.
+
+El juego busca estos archivos (formato .ogg, .mp3 o .wav):
+  menu.ogg     -> suena en el menú principal, opciones, controles, selección de niveles y fin de partida
+  partida.ogg  -> suena durante las partidas
+
+Si un archivo no existe, simplemente no suena música en esa parte.
+El volumen se ajusta en Opciones > Música.
+Recordá anotar en la lista de assets de dónde sacaron cada tema y su licencia.

@@ -1,0 +1,14 @@
+# Entorno virtual
+venv/
+.venv/
+
+# Archivos temporales de Python
+__pycache__/
+*.pyc
+
+# Progreso guardado de cada jugador
+progreso.json
+
+# Configuración de editores
+.idea/
+.vscode/
