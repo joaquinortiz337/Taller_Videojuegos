@@ -1,9 +1,13 @@
-Carpeta para la música del juego.
+Carpeta para la música del juego (generada por código con tools/generar_musica.py).
 
 El juego busca estos archivos (formato .ogg, .mp3 o .wav):
-  menu.ogg     -> suena en el menú principal, opciones, controles, selección de niveles y fin de partida
-  partida.ogg  -> suena durante las partidas
+  menu            -> suena en el menú principal, opciones, controles, selección de niveles y fin de partida
+  partida_base, partida_tension, partida_percusion
+                  -> la música de la partida en 3 capas que suenan a la vez y sincronizadas;
+                     el juego sube y baja la tensión y la percusión según el peligro.
+                     Las tres tienen que durar exactamente lo mismo.
+  partida         -> (opcional) si no están las 3 capas, se usa este archivo como tema único.
 
 Si un archivo no existe, simplemente no suena música en esa parte.
 El volumen se ajusta en Opciones > Música.
-Recordá anotar en la lista de assets de dónde sacaron cada tema y su licencia.
+Si reemplazan algún tema por uno descargado, anoten en la lista de assets de dónde lo sacaron y su licencia.

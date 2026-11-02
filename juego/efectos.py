@@ -33,6 +33,57 @@ class EfectoOnda(GameObject):
         super().update()
 
 
+class EfectoCruz(GameObject):
+    """Crucecita verde que sube y se desvanece (enemigo curado por el chamán)."""
+
+    def __init__(self, x, y, duracion=0.8):
+        self.duracion = duracion
+        self.tiempo = 0.0
+        self.y = y
+        img = pygame.Surface((14, 14), pygame.SRCALPHA)
+        pygame.draw.rect(img, (90, 230, 120), (5, 0, 4, 14))
+        pygame.draw.rect(img, (90, 230, 120), (0, 5, 14, 4))
+        super().__init__(x, y, img)
+
+    @property
+    def terminado(self):
+        return self.tiempo >= self.duracion
+
+    def update(self, dt):
+        self.tiempo += dt
+        self.y -= 35 * dt
+        self.rect.centery = int(self.y)
+        self.image.set_alpha(int(255 * (1 - min(1.0, self.tiempo / self.duracion))))
+        super().update()
+
+
+class TextoFlotante(GameObject):
+    """Texto chico que sube y se desvanece (ej: '+15' de energía)."""
+
+    def __init__(self, x, y, texto, color, duracion=1.0, tam=32):
+        self.duracion = duracion
+        self.tiempo = 0.0
+        self.y = y
+        fuente = pygame.font.Font(None, tam)
+        base = fuente.render(texto, True, color)
+        sombra = fuente.render(texto, True, (20, 20, 30))
+        img = pygame.Surface((base.get_width() + 2, base.get_height() + 2), pygame.SRCALPHA)
+        img.blit(sombra, (2, 2))
+        img.blit(base, (0, 0))
+        super().__init__(x, y, img)
+
+    @property
+    def terminado(self):
+        return self.tiempo >= self.duracion
+
+    def update(self, dt):
+        self.tiempo += dt
+        self.y -= 40 * dt
+        self.rect.centery = int(self.y)
+        self.image.set_alpha(int(255 * (1 - min(1.0, self.tiempo / self.duracion))))
+        super().update()
+
+
 class EfectoRayo(GameObject):
     """Rayo en zigzag que pasa por una lista de puntos, con destello."""
 

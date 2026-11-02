@@ -38,13 +38,20 @@ class Director:
         self.etapas = ap["etapas"]
 
         # Apariciones fijas: se convierten de "parte del nivel" (0 a 1) a número de enemigo
+        # Los grupos con en=1.0 forman el FINAL: se juntan (en el orden en que están escritos)
+        # y se ubican para ser lo último que aparece, enteros y sin mezclar (ej: escolta y jefe)
         self.fijos = {}
-        for f in ap["fijos"]:
-            if self._permitido(f["desde"]):
-                indice = min(self.total - 1, round(f["en"] * self.total))
-                while indice in self.fijos:
-                    indice += 1
-                self.fijos[indice] = f["enemigos"]
+        permitidos = [f for f in ap["fijos"] if self._permitido(f["desde"])]
+        final = [par for f in permitidos if f["en"] >= 1.0 for par in f["enemigos"]]
+        if final:
+            self.fijos[max(0, self.total - sum(n for _, n in final))] = (final, False)
+        for f in permitidos:
+            if f["en"] >= 1.0:
+                continue
+            indice = min(self.total - 1, round(f["en"] * self.total))
+            while indice in self.fijos:
+                indice += 1
+            self.fijos[indice] = (f["enemigos"], True)   # (enemigos, mezclar)
 
         self.aparecidos = 0
         self.cola = []               # [segundos de espera, clave] ya decididos
@@ -83,11 +90,16 @@ class Director:
 
     def _decidir_siguiente(self):
         """Agrega a la cola el próximo enemigo (o el grupo fijo que toque)."""
-        if self.aparecidos in self.fijos:
+        # Un grupo fijo puede haber quedado "salteado" si otro grupo grande pasó por encima
+        # de su número: se toma el primero que ya debería haber salido
+        pendientes = [i for i in self.fijos if i <= self.aparecidos]
+        if pendientes:
+            enemigos, mezclar = self.fijos.pop(min(pendientes))
             lista = []
-            for clave, cantidad in self.fijos.pop(self.aparecidos):
+            for clave, cantidad in enemigos:
                 lista += [clave] * cantidad
-            random.shuffle(lista)
+            if mezclar:
+                random.shuffle(lista)
         else:
             lista = [self._elegir_tipo()]
         lista = lista[:self.total - self.aparecidos]

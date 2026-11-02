@@ -1,5 +1,6 @@
 # juego/objetos.py
 # Objetos físicos que crean los poderes (bomba, agujero negro).
+import math
 import pygame
 import pymunk
 
@@ -126,6 +127,123 @@ class AgujeroNegro(ObjetoFisico):
         self.tiempo += dt
         self._dibujar()
         super().update()
+
+
+def _puntos_roca(radio):
+    """Octógono un poco irregular (siempre el mismo, para que la forma física y la imagen coincidan)."""
+    irregular = (1.0, 0.92, 1.0, 0.95, 0.9, 1.0, 0.93, 0.97)
+    return [(radio * k * math.cos(i * math.pi / 4 + 0.2), radio * k * math.sin(i * math.pi / 4 + 0.2))
+            for i, k in enumerate(irregular)]
+
+
+def _imagen_roca(radio):
+    tam = radio * 2 + 4
+    img = pygame.Surface((tam, tam), pygame.SRCALPHA)
+    c = tam / 2
+    puntos = [(c + x, c + y) for x, y in _puntos_roca(radio)]
+    pygame.draw.polygon(img, (128, 122, 115), puntos)
+    pygame.draw.polygon(img, (70, 65, 60), puntos, 3)
+    # Manchas y una grieta para que se note que gira
+    pygame.draw.circle(img, (105, 100, 95), (int(c - radio * 0.35), int(c - radio * 0.2)), radio // 4)
+    pygame.draw.circle(img, (150, 145, 138), (int(c + radio * 0.3), int(c + radio * 0.35)), radio // 5)
+    pygame.draw.lines(img, (80, 75, 70), False,
+                      [(c + radio * 0.1, c - radio * 0.7), (c + radio * 0.25, c - radio * 0.2), (c, c + radio * 0.1)], 2)
+    return img
+
+
+class Roca(ObjetoFisico):
+    """
+    Elemento de ayuda del nivel 3. Se agarra y se tira como un barril, pero no explota:
+    es pesada (cuesta levantarla) y pega fuerte por su masa. Se puede reusar todas las veces.
+    Por su forma de octógono se queda quieta en pendientes suaves; si la empujás, rueda.
+    """
+    agarrable = True
+    con_estela = True
+
+    def __init__(self, space, x):
+        d = C.ROCA
+        self.datos = d           # 'agarre' y 'lanzamiento' propios (la mano los usa)
+        self.agarrada = False
+        self.radio = d["radio"]
+        puntos = _puntos_roca(d["radio"])
+        body = pymunk.Body(d["masa"], pymunk.moment_for_poly(d["masa"], puntos))
+        shape = pymunk.Poly(body, puntos)
+        shape.friction = 0.9
+        shape.elasticity = 0.1
+        y = terreno.superficie(x) - d["radio"] - 2
+        super().__init__(x, y, _imagen_roca(d["radio"]), space, body, shape, rotate_image=True)
+
+
+def _puntos_cristal(ancho, alto):
+    return [(0, -alto / 2), (ancho / 2, -alto / 4), (ancho / 2 - 3, alto / 2),
+            (-ancho / 2 + 3, alto / 2), (-ancho / 2, -alto / 4)]
+
+
+def _imagen_cristal(ancho, alto, encendido):
+    img = pygame.Surface((ancho + 4, alto + 4), pygame.SRCALPHA)
+    c = (img.get_width() / 2, img.get_height() / 2)
+    puntos = [(c[0] + x, c[1] + y) for x, y in _puntos_cristal(ancho, alto)]
+    relleno, borde, brillo = (((90, 220, 255), (20, 90, 140), (220, 250, 255)) if encendido
+                              else ((105, 115, 130), (50, 55, 65), (150, 160, 170)))
+    pygame.draw.polygon(img, relleno, puntos)
+    # Cara de la izquierda más clara (da volumen) y una línea de brillo
+    pygame.draw.polygon(img, brillo, [puntos[0], puntos[4], (c[0], c[1] + alto / 2)], 0)
+    pygame.draw.polygon(img, relleno, [puntos[0], (c[0] + 2, c[1] + alto / 2), puntos[3], puntos[4]], 0)
+    pygame.draw.line(img, brillo, (c[0] - ancho / 4, c[1] - alto / 6), (c[0] - ancho / 4, c[1] + alto / 3), 2)
+    pygame.draw.polygon(img, borde, puntos, 2)
+    return img
+
+
+class Cristal(ObjetoFisico):
+    """
+    Elemento de ayuda del nivel 4: fijo en el suelo (no se agarra).
+    Si le estrellás un enemigo con fuerza, el enemigo recibe daño extra y vos ganás energía;
+    después se apaga y se va recargando de abajo hacia arriba (la escena detecta el choque).
+    """
+    agarrable = False
+
+    def __init__(self, space, x):
+        d = C.CRISTAL
+        self.datos = d
+        self.carga = 1.0           # 1 = listo para usar
+        self.tiempo = 0.0
+        self.img_encendido = _imagen_cristal(d["ancho"], d["alto"], True)
+        self.img_apagado = _imagen_cristal(d["ancho"], d["alto"], False)
+        body = pymunk.Body(body_type=pymunk.Body.STATIC)
+        shape = pymunk.Poly(body, _puntos_cristal(d["ancho"], d["alto"]))
+        shape.friction = 0.8
+        shape.elasticity = 0.4
+        y = terreno.superficie(x) - d["alto"] / 2 + 10   # un poco enterrado
+        super().__init__(x, y, self.img_encendido, space, body, shape)
+
+    @property
+    def listo(self):
+        return self.carga >= 1.0
+
+    def descargar(self):
+        self.carga = 0.0
+
+    def update(self, dt=1 / C.FPS):
+        self.tiempo += dt
+        if self.carga < 1.0:
+            self.carga = min(1.0, self.carga + dt / self.datos["recarga"])
+        super().update()
+
+    def draw(self, surface):
+        if self.listo:
+            # Brillo que late detrás
+            r = int(self.datos["alto"] * (0.55 + 0.07 * math.sin(self.tiempo * 4)))
+            brillo = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
+            pygame.draw.circle(brillo, (120, 230, 255, 60), (r, r), r)
+            surface.blit(brillo, brillo.get_rect(center=self.rect.center))
+            surface.blit(self.img_encendido, self.rect)
+        else:
+            surface.blit(self.img_apagado, self.rect)
+            # Se va llenando de abajo hacia arriba
+            alto = int(self.img_encendido.get_height() * self.carga)
+            if alto > 0:
+                area = pygame.Rect(0, self.img_encendido.get_height() - alto, self.img_encendido.get_width(), alto)
+                surface.blit(self.img_encendido, (self.rect.x, self.rect.y + area.y), area)
 
 
 def _imagen_barril(ancho, alto):

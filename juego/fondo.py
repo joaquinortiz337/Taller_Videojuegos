@@ -17,6 +17,13 @@ PALETAS = {
     "bosque": dict(cielo_arriba=(80, 110, 140), cielo_abajo=(165, 185, 180),
                    lejos=(95, 120, 120), medio=(55, 95, 70), cerca=(35, 70, 45),
                    tronco=(70, 50, 35), copa=(30, 75, 45), arbol="pino"),
+    # suelo: color del terreno jugable (si no está, se usa C.COLOR_SUELO)
+    "montanias": dict(cielo_arriba=(135, 165, 205), cielo_abajo=(215, 225, 235),
+                      lejos=(175, 185, 205), medio=(115, 125, 145), cerca=(80, 90, 105),
+                      tronco=(70, 55, 45), copa=(55, 85, 80), arbol="pino", suelo=(95, 92, 85)),
+    "atardecer": dict(cielo_arriba=(140, 110, 170), cielo_abajo=(250, 175, 115),
+                      lejos=(150, 105, 130), medio=(100, 70, 95), cerca=(65, 45, 60),
+                      tronco=(45, 30, 35), copa=(60, 40, 55), arbol="pino", suelo=(80, 62, 66)),
 }
 
 
@@ -31,6 +38,57 @@ def _colinas(color, alto_base, amplitud, armonicos, semilla):
         puntos.append((x, alto_base - amplitud * y / len(fases)))
     puntos.append((ANCHO_CAPA, C.ALTO))
     pygame.draw.polygon(capa, color, puntos)
+    return capa
+
+
+def _mezclar(a, b, t):
+    return tuple(int(x + (y - x) * t) for x, y in zip(a, b))
+
+
+def _montanias(color, alto_base, semilla):
+    """Cordillera muy lejana con picos (se repite cada ANCHO_CAPA píxeles)."""
+    rnd = random.Random(semilla)
+    capa = pygame.Surface((ANCHO_CAPA, C.ALTO), pygame.SRCALPHA)
+    puntos = [(0, C.ALTO), (0, alto_base)]
+    x = 0
+    while x < ANCHO_CAPA:
+        ancho = rnd.randint(110, 240)
+        pico = alto_base - rnd.randint(60, 150)
+        puntos.append((x + ancho * rnd.uniform(0.4, 0.6), pico))
+        x += ancho
+        puntos.append((min(x, ANCHO_CAPA), alto_base - rnd.randint(0, 30)))
+    puntos[-1] = (ANCHO_CAPA, alto_base)   # el final coincide con el principio: sin cortes al repetir
+    puntos.append((ANCHO_CAPA, C.ALTO))
+    pygame.draw.polygon(capa, color, puntos)
+    # Nieve / luz en las cumbres
+    claro = _mezclar(color, (255, 255, 255), 0.35)
+    for i in range(2, len(puntos) - 2, 2):
+        px, py = puntos[i]
+        pygame.draw.polygon(capa, claro, [(px, py), (px - 14, py + 22), (px + 12, py + 20)])
+    return capa
+
+
+def _frente(paleta, semilla):
+    """Capa delantera: matas y piedras oscuras abajo de todo, delante del juego (va más rápido)."""
+    rnd = random.Random(semilla)
+    capa = pygame.Surface((ANCHO_CAPA, C.ALTO), pygame.SRCALPHA)
+    color = _mezclar(paleta["cerca"], (0, 0, 0), 0.55) + (165,)
+    x = rnd.randint(40, 200)
+    while x < ANCHO_CAPA - 80:
+        piso = C.ALTO + 6
+        tipo = rnd.choice(("pasto", "mata", "piedra"))
+        if tipo == "pasto":
+            for _ in range(rnd.randint(6, 10)):
+                bx = x + rnd.randint(-22, 22)
+                alto = rnd.randint(55, 105)
+                pygame.draw.polygon(capa, color, [(bx - 4, piso), (bx + rnd.randint(-10, 10), piso - alto), (bx + 4, piso)])
+        elif tipo == "mata":
+            for _ in range(5):
+                pygame.draw.circle(capa, color, (x + rnd.randint(-34, 34), piso - rnd.randint(25, 55)), rnd.randint(22, 34))
+        else:
+            ancho = rnd.randint(60, 95)
+            pygame.draw.ellipse(capa, color, (x - ancho // 2, piso - 70, ancho, 90))
+        x += rnd.randint(330, 650)
     return capa
 
 
@@ -83,18 +141,30 @@ class Fondo:
 
     def __init__(self, tipo="pradera", semilla=1):
         paleta = PALETAS.get(tipo, PALETAS["pradera"])
+        self.color_suelo = paleta.get("suelo", C.COLOR_SUELO)
         self.cielo = _cielo(paleta)
+        # Velocidades bien separadas: cuanto más lejos, más lento (y más "perdido" en la neblina)
+        neblina = paleta["cielo_abajo"]
         self.parallax = ParallaxBackground()
-        self.parallax.add_layer(_nubes(semilla), 0.05)
-        self.parallax.add_layer(_colinas(paleta["lejos"], 330, 70, (2, 3, 5), semilla + 1), 0.15)
-        self.parallax.add_layer(_colinas(paleta["medio"], 420, 50, (3, 4, 7), semilla + 2), 0.4)
-        self.parallax.add_layer(_arboles(paleta, semilla + 3), 0.7)
+        self.parallax.add_layer(_nubes(semilla), 0.03)
+        self.parallax.add_layer(_montanias(_mezclar(paleta["lejos"], neblina, 0.5), 300, semilla + 4), 0.06)
+        self.parallax.add_layer(_colinas(paleta["lejos"], 340, 70, (2, 3, 5), semilla + 1), 0.18)
+        self.parallax.add_layer(_colinas(paleta["medio"], 420, 50, (3, 4, 7), semilla + 2), 0.42)
+        self.parallax.add_layer(_arboles(paleta, semilla + 3), 0.72)
         self.nubes = self.parallax.layers[0]
+        # Capa delantera: se mueve MÁS rápido que la cámara (da sensación de profundidad)
+        self.frente = ParallaxBackground()
+        self.frente.add_layer(_frente(paleta, semilla + 5), 1.35)
 
     def update(self, dx_camara, dt):
         self.parallax.update(dx_camara)
+        self.frente.update(dx_camara)
         self.nubes.update(self.VELOCIDAD_NUBES * dt / self.nubes.speed)   # deriva sola
 
     def draw(self, surface):
         surface.blit(self.cielo, (0, 0))
         self.parallax.draw(surface)
+
+    def draw_frente(self, surface):
+        """Se dibuja después del juego y antes del HUD."""
+        self.frente.draw(surface)

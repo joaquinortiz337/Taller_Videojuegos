@@ -22,50 +22,56 @@ class PanelPrueba:
         self.etiquetas = []
         self.botones = []
 
-        # --- Columna 1: enemigos y acciones ---
+        # --- Arriba: enemigos en dos columnas ---
         x, y = 14, 74
         self.etiquetas.append(Label("Enemigos", (x, y), size=24, color=(255, 220, 60)))
         y += 22
         self.botones_enemigo = {}
-        for clave in CLASES_ENEMIGO:
+        claves = list(CLASES_ENEMIGO)
+        filas = (len(claves) + 1) // 2
+        for i, clave in enumerate(claves):
             nombre = C.ENEMIGOS[clave]["nombre"]
-            b = SoundButton(x, y, 160, 26, nombre, lambda c=clave: escena.prueba_elegir_enemigo(c),
+            bx = 14 if i < filas else 188
+            by = y + (i % filas) * 27
+            b = SoundButton(bx, by, 162, 24, nombre, lambda c=clave: escena.prueba_elegir_enemigo(c),
                             click, **ESTILO)
             self.botones_enemigo[clave] = b
             self.botones.append(b)
-            y += 30
-        y += 8
+        y_abajo = y + filas * 27 + 8
+
+        # --- Columna 1: acciones y niveles de poderes ---
+        x, y = 14, y_abajo
         self.etiquetas.append(Label("Acciones", (x, y), size=24, color=(255, 220, 60)))
         y += 22
-        self.botones.append(SoundButton(x, y, 160, 26, "Borrar enemigos", escena.prueba_borrar_enemigos,
+        self.botones.append(SoundButton(x, y, 162, 24, "Borrar enemigos", escena.prueba_borrar_enemigos,
                                         click, **ESTILO))
-        y += 30
-        self.botones.append(SoundButton(x, y, 160, 26, "Reponer barriles", escena.prueba_reponer_barriles,
+        y += 27
+        self.botones.append(SoundButton(x, y, 162, 24, "Reponer objetos", escena.prueba_reponer_barriles,
                                         click, **ESTILO))
+        y += 32
+        self.etiquetas.append(Label("Nivel de poderes", (x, y), size=24, color=(255, 220, 60)))
+        y += 22
+        self.botones_nivel = {}
+        for poder in escena.poderes:
+            self.etiquetas.append(Label(poder.nombre, (x, y + 4), size=22))
+            for n in (1, 2, 3):
+                b = SoundButton(x + 72 + (n - 1) * 30, y, 26, 24, str(n),
+                                lambda p=poder, n=n: escena.prueba_nivel_poder(p, n), click, **ESTILO)
+                self.botones_nivel[(poder.clave, n)] = b
+                self.botones.append(b)
+            y += 27
 
-        # --- Columna 2: opciones y niveles de poderes ---
-        x, y = 188, 74
+        # --- Columna 2: opciones ---
+        x, y = 188, y_abajo
         self.etiquetas.append(Label("Opciones", (x, y), size=24, color=(255, 220, 60)))
         y += 22
         self.botones_opcion = {}
         for clave, texto in (("energia_infinita", "Energía infinita"), ("sin_recarga", "Sin recarga"),
                              ("base_invencible", "Base invencible"), ("enemigos_quietos", "Enemigos quietos")):
-            b = SoundButton(x, y, 162, 26, texto, lambda c=clave: escena.prueba_alternar(c), click, **ESTILO)
+            b = SoundButton(x, y, 162, 24, texto, lambda c=clave: escena.prueba_alternar(c), click, **ESTILO)
             self.botones_opcion[clave] = b
             self.botones.append(b)
-            y += 30
-        y += 8
-        self.etiquetas.append(Label("Nivel de poderes", (x, y), size=24, color=(255, 220, 60)))
-        y += 24
-        self.botones_nivel = {}
-        for poder in escena.poderes:
-            self.etiquetas.append(Label(poder.nombre, (x, y + 5), size=22))
-            for n in (1, 2, 3):
-                b = SoundButton(x + 72 + (n - 1) * 30, y, 26, 26, str(n),
-                                lambda p=poder, n=n: escena.prueba_nivel_poder(p, n), click, **ESTILO)
-                self.botones_nivel[(poder.clave, n)] = b
-                self.botones.append(b)
-            y += 30
+            y += 27
         self.etiquetas.append(Label("Tab: mostrar/ocultar", (x, self.rect.bottom - 22), size=20,
                                     color=(180, 180, 180)))
 

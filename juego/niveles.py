@@ -9,6 +9,7 @@
 #   reemplazo:          probabilidad de que entre otro al instante al matar uno
 #   etapas:             qué tipos aparecen según cuánto del nivel pasó (0 a 1)
 #   fijos:              grupos que aparecen sí o sí en un momento del nivel
+#                       (en=1.0: grupo final, lo último que aparece, en el orden escrito)
 # "desde" indica la dificultad mínima en la que existe esa parte.
 
 
@@ -34,10 +35,11 @@ NIVELES = [
         disponible=True,
         ancho=2500,               # largo del nivel en píxeles
         fondo="pradera",          # paleta del fondo (ver juego/fondo.py)
-        barriles=[700, 1400],     # posición x de cada barril al empezar
-        # Colinas: (x, desnivel). Negativo = más alto. Cerca de la base y de la entrada, plano.
-        terreno=[(0, 0), (250, 0), (450, -45), (650, -65), (850, -20), (1050, 0), (1250, -55),
-                 (1450, -85), (1650, -40), (1850, 10), (2050, -30), (2250, 0), (2500, 0)],
+        barriles=[700, 1500],     # posición x de cada barril al empezar
+        suelos=[(1150, 1400, "barro")],   # tramos de suelo especial: (desde x, hasta x, tipo) (ver C.SUELOS)
+        # Lomas suaves: (x, desnivel). Negativo = más alto. Cerca de la base y de la entrada, plano.
+        terreno=[(0, 0), (300, 0), (700, -55), (1100, -15), (1500, -60), (1900, -20),
+                 (2250, 0), (2500, 0)],
         aparicion=dict(
             total=40, min_vivos=2, max_vivos=8,
             intervalo_base=1.6, intervalo_por_vivo=0.3, reemplazo=0.3,
@@ -62,9 +64,10 @@ NIVELES = [
         disponible=True,
         ancho=2500,
         fondo="bosque",
-        barriles=[600, 1200, 1900],
-        terreno=[(0, 0), (250, 0), (430, -50), (580, -90), (760, -100), (960, -40), (1120, 5),
-                 (1300, -40), (1520, -100), (1700, -110), (1900, -50), (2080, 0), (2250, -20), (2500, -20)],
+        barriles=[750, 1500, 1950],
+        suelos=[(1000, 1300, "barro"), (1680, 1900, "barro")],
+        terreno=[(0, 0), (300, 0), (750, -70), (1150, -25), (1550, -50), (1950, -75),
+                 (2300, 0), (2500, 0)],
         aparicion=dict(
             total=50, min_vivos=3, max_vivos=9,
             intervalo_base=1.5, intervalo_por_vivo=0.3, reemplazo=0.4,
@@ -83,10 +86,81 @@ NIVELES = [
             ],
         ),
     ),
-    dict(id="nivel3", nombre="Próximamente", descripcion="", posicion=(640, 300),
-         disponible=False, barriles=[], aparicion=None),
-    dict(id="nivel4", nombre="Próximamente", descripcion="", posicion=(860, 220),
-         disponible=False, barriles=[], aparicion=None),
+    dict(
+        id="nivel3",
+        nombre="Las Montañas",
+        descripcion="Algunos invasores aprendieron a volar y a saltar. Usá las rocas sueltas de las cumbres.",
+        posicion=(640, 300),
+        disponible=True,
+        ancho=2500,
+        fondo="montanias",
+        barriles=[1200, 1850],
+        rocas=[750, 1650, 2050],  # posición x de cada roca suelta (en las cumbres)
+        suelos=[(400, 680, "hielo"), (1280, 1560, "hielo")],
+        terreno=[(0, 0), (300, 0), (750, -80), (1200, -30), (1650, -80), (2050, -40),
+                 (2300, 0), (2500, 0)],
+        aparicion=dict(
+            total=55, min_vivos=3, max_vivos=9,
+            intervalo_base=1.4, intervalo_por_vivo=0.3, reemplazo=0.4,
+            etapas=[
+                etapa(0.2, tipo("comun_mediano", 2), tipo("corredor", 2), tipo("volador_chico", 2)),
+                etapa(0.55, tipo("comun_mediano", 2), tipo("corredor", 1), tipo("volador_chico", 2),
+                      tipo("saltarin", 2), tipo("corredor_volador", 2), tipo("acorazado", 1)),
+                etapa(1.0, tipo("comun_mediano", 1), tipo("volador_chico", 1), tipo("saltarin", 2),
+                      tipo("corredor_volador", 2), tipo("acorazado", 1), tipo("volador_mediano", 2),
+                      tipo("divisor", 2), tipo("explosivo", 1), tipo("comun_grande", 1),
+                      tipo("divisor", 1, desde="dificil"), tipo("volador_mediano", 1, desde="dificil")),
+            ],
+            fijos=[
+                fijo(0.15, [("volador_chico", 4)]),                              # primera bandada
+                fijo(0.45, [("saltarin", 2), ("divisor", 1)]),
+                fijo(0.6, [("chaman", 1), ("comun_mediano", 2)], desde="experto"),  # adelanto del nivel 4
+                fijo(0.8, [("volador_mediano", 2), ("corredor_volador", 4)]),     # escuadrilla
+                fijo(0.9, [("divisor", 3)], desde="dificil"),
+            ],
+        ),
+    ),
+    dict(
+        id="nivel4",
+        nombre="La Fortaleza",
+        descripcion="El último bastión, con el jefe al final. "
+                    "Estrellá enemigos contra los cristales para ganar energía.",
+        posicion=(860, 220),
+        disponible=True,
+        ancho=2500,
+        fondo="atardecer",
+        barriles=[600, 1250],
+        cristales=[900, 2000],   # posición x de cada cristal de energía
+        suelos=[(700, 1000, "barro"), (1430, 1680, "hielo")],
+        # Meseta larga en el medio (buena para muros)
+        terreno=[(0, 0), (300, 0), (650, -60), (1350, -60), (1700, -20), (2000, -55),
+                 (2300, 0), (2500, 0)],
+        aparicion=dict(
+            total=65, min_vivos=3, max_vivos=10,
+            intervalo_base=1.3, intervalo_por_vivo=0.3, reemplazo=0.4,
+            etapas=[
+                etapa(0.25, tipo("comun_mediano", 2), tipo("corredor", 2), tipo("volador_chico", 2),
+                      tipo("saltarin", 1), tipo("chaman", 1)),
+                etapa(0.6, tipo("comun_mediano", 2), tipo("corredor", 1), tipo("volador_chico", 1),
+                      tipo("corredor_volador", 1), tipo("saltarin", 1), tipo("chaman", 1),
+                      tipo("animador", 1), tipo("acorazado", 1), tipo("divisor", 1), tipo("explosivo", 1)),
+                etapa(1.0, tipo("comun_mediano", 1), tipo("comun_grande", 1), tipo("volador_mediano", 1),
+                      tipo("corredor_volador", 1), tipo("saltarin", 1), tipo("chaman", 1),
+                      tipo("animador", 1), tipo("acorazado", 2), tipo("divisor", 1), tipo("explosivo", 1),
+                      tipo("acorazado", 1, desde="dificil"), tipo("animador", 1, desde="dificil")),
+            ],
+            fijos=[
+                fijo(0.2, [("chaman", 1), ("comun_mediano", 3)]),     # el primer chamán
+                fijo(0.45, [("animador", 1), ("corredor", 6)]),       # estampida acelerada
+                fijo(0.7, [("acorazado", 2), ("chaman", 1)]),
+                # Final (en=1.0): los grupos finales se juntan en este orden y son lo último que
+                # aparece: la escolta (más grande en Difícil y Experto) y después el jefe
+                fijo(1.0, [("chaman", 1)], desde="experto"),
+                fijo(1.0, [("animador", 1)], desde="dificil"),
+                fijo(1.0, [("comun_chico", 4), ("jefe", 1)]),
+            ],
+        ),
+    ),
 ]
 
 # Nivel de prueba (solo con C.DEBUG = True): copia de La Pradera, sin enemigos
@@ -100,7 +174,10 @@ NIVEL_PRUEBA = dict(
     prueba=True,
     ancho=2500,
     fondo="pradera",
-    barriles=[700, 1400],
+    barriles=[700, 1250],
+    rocas=[1100],
+    cristales=[1750],
+    suelos=[(850, 1050, "barro"), (1350, 1600, "hielo")],
     terreno=NIVELES[0]["terreno"],
     aparicion=None,
 )

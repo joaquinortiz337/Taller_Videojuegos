@@ -30,8 +30,5 @@ class CamaraManual(Camera):
     def a_mundo(self, pos_pantalla):
         return (pos_pantalla[0] + self.x, pos_pantalla[1])
 
-    def a_pantalla(self, pos_mundo):
-        return (pos_mundo[0] - self.x, pos_mundo[1])
-
     def visible(self, x_mundo, margen=0):
         return self.x - margen <= x_mundo <= self.x + self.screen_width + margen

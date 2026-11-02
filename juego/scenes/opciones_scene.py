@@ -1,6 +1,7 @@
 # juego/scenes/opciones_scene.py
 from juego.scenes.base_menu import MenuBase
 from juego import config as C
+from juego import estilo as E
 
 
 class OpcionesScene(MenuBase):
@@ -9,12 +10,11 @@ class OpcionesScene(MenuBase):
     def __init__(self, game):
         super().__init__(game)
         cx = C.ANCHO // 2
-        self.boton(cx - 220, 170, 60, 50, "-", lambda: self._cambiar("volumen_efectos", -0.1))
-        self.boton(cx + 160, 170, 60, 50, "+", lambda: self._cambiar("volumen_efectos", +0.1))
-        self.boton(cx - 220, 240, 60, 50, "-", lambda: self._cambiar("volumen_musica", -0.1))
-        self.boton(cx + 160, 240, 60, 50, "+", lambda: self._cambiar("volumen_musica", +0.1))
-        self.boton_borrar = self.boton(cx - 160, 330, 320, 55, "Borrar progreso", self._borrar)
-        self.boton(cx - 140, 470, 280, 55, "Volver", lambda: self.game.change_scene("menu"))
+        for y, atributo in ((165, "volumen_efectos"), (232, "volumen_musica"), (299, "volumen_voz")):
+            self.boton(cx - 220, y, 60, 50, "-", lambda a=atributo: self._cambiar(a, -0.1))
+            self.boton(cx + 160, y, 60, 50, "+", lambda a=atributo: self._cambiar(a, +0.1))
+        self.boton_borrar = self.boton(cx - 160, 385, 320, 54, "Borrar progreso", self._borrar)
+        self.boton(20, C.ALTO - 70, 160, 50, "Volver", lambda: self.game.change_scene("menu"))
         self.confirmando = False
         self.aviso = ""
 
@@ -25,6 +25,8 @@ class OpcionesScene(MenuBase):
         prog = self.game.progreso
         setattr(prog, atributo, getattr(prog, atributo) + cambio)
         self.game.aplicar_volumen()
+        if atributo == "volumen_voz":
+            self.game.audio.voz("good_job")   # para escuchar cómo queda
 
     def _borrar(self):
         if not self.confirmando:
@@ -38,11 +40,15 @@ class OpcionesScene(MenuBase):
             self.aviso = "Progreso borrado"
 
     def draw(self, surface):
-        super().draw(surface)
+        self.dibujar_fondo(surface)
+        E.panel(surface, (C.ANCHO // 2 - 260, 140, 520, 330))
         prog = self.game.progreso
-        for y, nombre, valor in ((195, "Efectos", prog.volumen_efectos), (265, "Música", prog.volumen_musica)):
-            t = self.fuente.render(f"{nombre}: {int(round(valor * 100))}%", True, C.COLOR_TEXTO)
+        for y, nombre, valor in ((190, "Efectos", prog.volumen_efectos), (257, "Música", prog.volumen_musica),
+                                 (324, "Narrador", prog.volumen_voz)):
+            t = self.fuente.render(f"{nombre}: {int(round(valor * 100))}%", True, E.TEXTO)
             surface.blit(t, t.get_rect(center=(C.ANCHO // 2, y)))
         if self.aviso:
-            a = self.fuente_chica.render(self.aviso, True, (150, 0, 0))
-            surface.blit(a, a.get_rect(center=(C.ANCHO // 2, 410)))
+            a = self.fuente_chica.render(self.aviso, True, (255, 130, 110))
+            surface.blit(a, a.get_rect(center=(C.ANCHO // 2, 455)))
+        for b in self.botones:
+            b.draw(surface)

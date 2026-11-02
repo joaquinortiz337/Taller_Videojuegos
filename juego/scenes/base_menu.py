@@ -1,20 +1,19 @@
 # juego/scenes/base_menu.py
-import pygame
-
 from engine.ui import Scene  # Hereda del motor
 from juego.ui_extra import SoundButton
 from juego import config as C
+from juego import estilo as E
 
 
 class MenuBase(Scene):
-    """Base para todas las pantallas de menú: título + lista de botones con sonido."""
+    """Base para todas las pantallas de menú: fondo animado + título dorado + botones con sonido."""
     TITULO = ""
+    FONDO_MENU = True    # el juego mueve el fondo animado mientras esta pantalla está activa
 
     def __init__(self, game):
         super().__init__(game)
-        self.fuente_titulo = pygame.font.Font(None, 80)
-        self.fuente = pygame.font.Font(None, 34)
-        self.fuente_chica = pygame.font.Font(None, 26)
+        self.fuente = E.fuente(28)
+        self.fuente_chica = E.fuente(21)
         self.botones = []
 
     def boton(self, x, y, ancho, alto, texto, accion):
@@ -28,10 +27,10 @@ class MenuBase(Scene):
                 b.handle_event(e)
 
     def dibujar_fondo(self, surface):
-        surface.fill(C.COLOR_CIELO)
+        self.game.fondo_menu.draw(surface)
         if self.TITULO:
-            t = self.fuente_titulo.render(self.TITULO, True, C.COLOR_TEXTO)
-            surface.blit(t, t.get_rect(center=(C.ANCHO // 2, 80)))
+            t = E.titulo(self.TITULO, 64)
+            surface.blit(t, t.get_rect(center=(C.ANCHO // 2, 75)))
 
     def draw(self, surface):
         self.dibujar_fondo(surface)

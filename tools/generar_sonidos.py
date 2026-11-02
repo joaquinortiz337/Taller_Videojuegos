@@ -183,6 +183,56 @@ def generar():
     d = 0.06
     guardar("click", np.sin(2 * np.pi * 1200 * t(d)) * env(int(SR * d), caida=80), 0.5)
 
+    # Chamán curando (campanitas que suben)
+    partes = []
+    for f in (784, 988, 1175, 1568):
+        d = 0.09
+        tt = t(d)
+        partes.append((np.sin(2 * np.pi * f * tt) + 0.4 * np.sin(2 * np.pi * 3 * f * tt)) * env(len(tt), caida=14))
+    d = 0.5
+    cola = np.sin(2 * np.pi * 1568 * t(d)) * env(int(SR * d), caida=9)
+    guardar("curar", np.concatenate(partes + [0.6 * cola]), 0.45)
+
+    # Animador (grito corto que sube, tipo "¡vamos!")
+    d = 0.35
+    grito = barrido(300, 700, d, "cuadrada") * env(int(SR * d), ataque=0.02, caida=7)
+    grito = pasabajos(grito, 0.25) + 0.3 * barrido(600, 1400, d) * env(int(SR * d), caida=10)
+    guardar("animar", grito, 0.45)
+
+    # Pisotón del jefe (golpe muy grave + tierra)
+    d = 0.8
+    pis = 1.2 * barrido(60, 25, d) * env(int(SR * d), ataque=0.002, caida=6)
+    pis += pasabajos(ruido(d), 0.03) * env(int(SR * d), ataque=0.002, caida=5)
+    pis += 0.3 * pasabajos(ruido(d), 0.3) * env(int(SR * d), caida=20)
+    guardar("pisoton", pis, 0.95)
+
+    # Mejora comprada (destello que sube)
+    partes = []
+    for f in (523, 659, 784, 1047):
+        d = 0.07
+        tt = t(d)
+        partes.append(np.sin(2 * np.pi * f * tt) * env(len(tt), caida=10))
+    d = 0.45
+    tt = t(d)
+    brillo = (np.sin(2 * np.pi * 1047 * tt) + 0.5 * np.sin(2 * np.pi * 1568 * tt)) * env(len(tt), caida=6)
+    brillo *= 0.8 + 0.2 * np.sin(2 * np.pi * 12 * tt)
+    guardar("mejora", np.concatenate(partes + [brillo]), 0.5)
+
+    # Cristal de energía (campanada de vidrio con brillo)
+    d = 0.9
+    tt = t(d)
+    vidrio = sum(peso * np.sin(2 * np.pi * f * tt) * env(len(tt), ataque=0.001, caida=c)
+                 for f, peso, c in ((1319, 1.0, 5), (2637, 0.5, 8), (3951, 0.3, 12), (1760, 0.4, 6)))
+    vidrio += 0.15 * (ruido(d) - pasabajos(ruido(d), 0.3)) * env(len(tt), ataque=0.001, caida=40)
+    guardar("cristal", vidrio, 0.5)
+
+    # Latido (último corazón): "pum-pum" grave
+    def pum(f, d=0.16):
+        tt = t(d)
+        return np.sin(2 * np.pi * f * tt * (1 + 0.3 * np.exp(-tt * 30))) * env(len(tt), ataque=0.004, caida=22)
+    latido = np.concatenate([pum(62), np.zeros(int(SR * 0.09)), 0.7 * pum(55), np.zeros(int(SR * 0.1))])
+    guardar("latido", pasabajos(latido, 0.2), 0.9)
+
 
 if __name__ == "__main__":
     generar()
