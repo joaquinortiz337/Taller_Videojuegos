@@ -131,6 +131,7 @@ NIVELES = [
         fondo="atardecer",
         barriles=[600, 1250],
         cristales=[900, 2000],   # posición x de cada cristal de energía
+        rocas=[1150, 1880],      # para poder romper la armadura de los acorazados sin energía
         suelos=[(700, 1000, "barro"), (1430, 1680, "hielo")],
         # Meseta larga en el medio (buena para muros)
         terreno=[(0, 0), (300, 0), (650, -60), (1350, -60), (1700, -20), (2000, -55),

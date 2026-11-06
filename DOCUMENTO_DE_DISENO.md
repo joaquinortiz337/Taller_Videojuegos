@@ -5,7 +5,6 @@
 | **Materia** | Taller de Videojuegos 2D · UTU · 2026 |
 | **Integrantes** | Joaquín Ortiz · Facundo Cabrera |
 | **Género** | Defensa con física (agarrar y lanzar) |
-| **Referencia** | *Slammings* (el ritmo y la mecánica de agarrar enemigos) |
 | **Tecnología** | Python 3 · Pygame · Pymunk (física) · motor 2D desarrollado en el curso |
 | **Repositorio** | https://github.com/joaquinortiz337/Taller_Videojuegos |
 | **Fecha** | Noviembre de 2026 |
@@ -113,7 +112,7 @@ El juego no utiliza imágenes, sonidos ni música de terceros. Todo se genera po
 | Tipografía principal | **Lilita One** (`assets/fonts/LilitaOne-Regular.ttf`), © 2011 Juan Montoreano | Fuente libre (disponible en Google Fonts) | SIL Open Font License 1.1 (copia en `assets/fonts/LilitaOne-OFL.txt`) |
 | Tipografía secundaria | **FreeSans** (GNU FreeFont) | Es la fuente por defecto incluida en Pygame | GPLv3 con excepción de fuentes |
 | Motor | `engine/` (bucle, escenas, cámara, partículas, parallax, audio) | Desarrollado durante el curso | Material del curso |
-| Librerías | Pygame / Pygame-CE (render, entrada, audio) · Pymunk 7 (física, sobre Chipmunk2D) | Instaladas con `pip` | LGPL 2.1 · MIT |
+| Librerías | Pygame (render, entrada, audio) · Pymunk 7 (física, sobre Chipmunk2D) | Instaladas con `pip` | LGPL 2.1 · MIT |
 
 ## 9. Estructura del proyecto
 
@@ -131,20 +130,43 @@ Todo el balance (vida, velocidad, daño, costos, materiales) vive en `juego/conf
 
 ## 10. Cómo ejecutarlo
 
-Requisitos: Python 3 y las librerías de `requirements.txt`. Versiones de referencia: Pymunk 7.x (el código usa la API de la versión 7) y, en Python 3.14, `pygame-ce` en lugar de `pygame`.
+Requisitos: Python 3 y las librerías de `requirements.txt`.
 
-```bash
-pip install pymunk pygame-ce
-python main.py
-```
+1. Instalar Python desde https://www.python.org/downloads/
+   En Windows, durante la instalación marcar la casilla **"Add Python to PATH"**.
+
+2. Clonar el repositorio y entrar a la carpeta:
+   ```
+   git clone https://github.com/joaquinortiz337/Taller_Videojuegos.git
+   cd Taller_Videojuegos
+   ```
+
+3. Crear un entorno virtual:
+   ```
+   python -m venv venv
+   ```
+
+4. Activarlo:
+   - Windows: `venv\Scripts\activate`
+   - Linux / Mac: `source venv/bin/activate`
+
+5. Instalar las dependencias:
+   ```
+   pip install -r requirements.txt
+   ```
+
+6. Ejecutar el juego:
+   ```
+   python main.py
+   ```
 
 Para regenerar el audio (opcional, requiere `numpy`): `python tools/generar_sonidos.py` y `python tools/generar_musica.py`.
 
-**Modo desarrollo.** Con `DEBUG = True` en `juego/config.py` se habilita un nivel de prueba (con panel para crear enemigos) y las teclas F1 a F3. En la versión entregada debe estar en `False`.
+**Modo desarrollo.** Con `DEBUG = True` en `juego/config.py` se habilita un nivel de prueba (con panel para crear enemigos) y las teclas F1 a F3.
 
 ## 11. Estado y limitaciones conocidas
 
-- Los gráficos son provisorios: están dibujados por código y no hay sprites artísticos.
+- Los gráficos: están dibujados por código y no hay sprites artísticos.
 - Faltan cinco frases del narrador (`watch_out`, `amazing`, `incredible`, `armor_down` y `here_comes_the_boss`). El juego funciona igual, pero los avisos de armadura rota y de jefe no tienen voz.
 - No hay pruebas automáticas: el balance y la física se validaron jugando, con el nivel de prueba.
 - La simulación usa un paso de tiempo fijo de 1/60 s: si la máquina no sostiene los 60 FPS, el juego se ve más lento.
